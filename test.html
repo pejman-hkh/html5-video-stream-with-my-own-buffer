@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+  </head>
+  <body>
+    <video controls></video>
+    <script>
+      var video = document.querySelector('video');
+
+      var assetURL = 'http://localhost/frag_bunny.mp4';
+      // Need to be specific for Blink regarding codecs
+      // ./mp4info frag_bunny.mp4 | grep Codec
+      var mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+      var mediaSource;
+
+      if ('MediaSource' in window && MediaSource.isTypeSupported(mimeCodec)) {
+        mediaSource = new MediaSource;
+        //console.log(mediaSource.readyState); // closed
+        video.src = URL.createObjectURL(mediaSource);
+        mediaSource.addEventListener('sourceopen', sourceOpen);
+      } else {
+        console.error('Unsupported MIME type or codec: ', mimeCodec);
+      }
+
+      var bytes = 0;
+      var sourceBuffer;
+      function sourceOpen () {
+      
+        //console.log(this.readyState); // open
+        //var mediaSource = this;
+        if( bytes == 0 )
+        sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+        
+
+        fetchAB(assetURL, function (buf) {
+          //sourceBuffer.addEventListener('updateend', function (_) {
+            //mediaSource.endOfStream();
+            //video.play();
+            //console.log(mediaSource.readyState); // ended
+         // });
+          sourceBuffer.appendBuffer(buf);
+
+          bytes += 3000;
+          sourceOpen();
+
+         
+        });
+      };
+
+      video.addEventListener("change", function() {
+        //alert('test');
+      });
+      
+      function fetchAB (url, cb) {
+        console.log(url);
+        var xhr = new XMLHttpRequest;
+        xhr.open('get', url);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function () {
+          if( this.status == 206 ) {
+
+            cb(xhr.response);
+
+          }
+
+        };
+
+        xhr.setRequestHeader('Range', 'bytes='+(bytes)+'-'+(bytes+3000-1));
+        xhr.send();
+      };
+    </script>
+  </body>
+</html>
+
